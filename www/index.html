@@ -1015,6 +1015,11 @@ function renderParent(){
       <button class="btn soft sm" onclick="setCity()">保存城市</button>
       <p class="sub">切换城市会删除属于北京的演示地点，请改用你所在城市的真实地点。</p>
     </div>
+    <div class="card">
+      <h2>关于与隐私</h2>
+      <button class="btn ghost sm" onclick="openPrivacy()">🔒 隐私政策</button>
+      <p class="sub">本应用所有数据仅保存在本机，不上传任何服务器、无任何第三方统计或广告 SDK。</p>
+    </div>
     <button class="back" onclick="navigate('home')">‹ 返回首页</button>
   </div>`;
 }
@@ -1059,8 +1064,9 @@ function importData(input){
 async function loadDemo(){
   const ok=await confirmModal('恢复演示数据','将把北京演示地点加入当前列表（不删除已有地点），继续？');
   if(!ok)return;
-  demoLocations().forEach(l=>state.locations.push(l)); save(); toast('已添加演示地点'); renderParent();
+  demoLocations().forEach(l=>state.locations.push(l));   save(); toast('已添加演示地点'); renderParent();
 }
+function openPrivacy(){ window.location.href='privacy.html'; }
 async function clearAll(){
   const ok=await confirmModal('清空全部数据','将删除所有地点、愿望清单、探索记录、日记与计划，此操作不可恢复！');
   if(!ok)return;
