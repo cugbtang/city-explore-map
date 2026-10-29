@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🗺️ 我的城市探索地图（北京）</title>
+<style>
+  :root{
+    --bg:#fdf6ec; --panel:#ffffff; --ink:#4a4036; --sub:#8a8175;
+    --line:#efe6d8; --accent:#ff8a5b; --accent2:#5bbf9e; --blue:#4bb3e0;
+    --shadow:0 4px 14px rgba(180,140,90,.12);
+    --radius:18px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--bg);
+    padding-bottom:74px;position:relative;}
+  header.top{background:linear-gradient(135deg,#ffb27a,#ff8a5b);color:#fff;
+    padding:calc(18px + env(safe-area-inset-top)) 18px 22px;border-radius:0 0 24px 24px;box-shadow:var(--shadow);}
+  header.top h1{margin:0;font-size:20px;font-weight:800;}
+  header.top p{margin:6px 0 0;font-size:13px;opacity:.95;}
+  .stats{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+  .stat{flex:1;min-width:70px;background:rgba(255,255,255,.22);border-radius:14px;
+    padding:8px 6px;text-align:center;}
+  .stat b{display:block;font-size:18px;}
+  .stat span{font-size:11px;opacity:.95;}
+  .page{padding:16px;}
+  .card{background:var(--panel);border-radius:var(--radius);padding:16px;
+    box-shadow:var(--shadow);margin-bottom:14px;}
+  .card h2{margin:0 0 10px;font-size:16px;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    border:none;border-radius:14px;padding:13px 14px;font-size:15px;font-weight:700;
+    background:var(--accent);color:#fff;cursor:pointer;width:100%;margin-top:8px;
+    transition:transform .05s;}
+  .btn:active{transform:scale(.98);}
+  .btn.alt{background:var(--accent2);}
+  .btn.blue{background:var(--blue);}
+  .btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line);}
+  .btn.soft{background:#fff4ec;color:var(--accent);border:1.5px solid #ffd9c4;}
+  .btn.sm{width:auto;padding:9px 12px;font-size:13px;border-radius:11px;margin-top:0;}
+  .btn.mini{width:auto;padding:6px 10px;font-size:12px;border-radius:10px;margin-top:0;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .pill{display:inline-flex;align-items:center;gap:4px;background:#fff4ec;color:var(--accent);
+    border-radius:20px;padding:5px 11px;font-size:12px;font-weight:700;margin:3px 4px 3px 0;
+    cursor:pointer;border:1.5px solid transparent;}
+  .pill.on{background:var(--accent);color:#fff;}
+  .pill.sel{background:#fff;border:1.5px solid var(--accent);color:var(--accent);}
+  label.fld{display:block;margin:10px 0 0;}
+  label.fld span{font-size:13px;color:var(--sub);font-weight:600;}
+  input,select,textarea{width:100%;margin-top:5px;padding:11px;border-radius:12px;
+    border:1.5px solid var(--line);background:#fffdf9;font-size:14px;color:var(--ink);
+    font-family:inherit;}
+  textarea{resize:vertical;min-height:64px;}
+  .loc-card{display:flex;gap:10px;align-items:center;background:#fff;border-radius:16px;
+    padding:12px;box-shadow:var(--shadow);margin-bottom:10px;cursor:pointer;}
+  .loc-ic{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;
+    justify-content:center;font-size:24px;flex-shrink:0;}
+  .loc-meta{flex:1;min-width:0;}
+  .loc-meta h3{margin:0;font-size:15px;display:flex;align-items:center;gap:6px;}
+  .loc-meta p{margin:2px 0 0;font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;}
+  .badge.vis{background:#e7f7ee;color:#2f9e6b;}
+  .badge.wish{background:#ffe7ef;color:#e0558a;}
+  .badge.demo{background:#fff3d6;color:#c08a2a;}
+  .map-wrap{background:linear-gradient(135deg,#eaf6ff,#f3fbf3);border-radius:var(--radius);
+    overflow:hidden;position:relative;box-shadow:var(--shadow);}
+  .map-tools{position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:2;}
+  .map-tools button{width:34px;height:34px;border-radius:50%;border:none;background:#fff;
+    box-shadow:var(--shadow);font-size:18px;cursor:pointer;color:var(--ink);}
+  svg.map{display:block;width:100%;height:auto;touch-action:none;}
+  .marker{cursor:pointer;}
+  .marker circle{transition:r .1s;}
+  .empty{text-align:center;color:var(--sub);padding:30px 16px;font-size:14px;}
+  .empty .big{font-size:40px;margin-bottom:8px;}
+  .bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;
+    background:#fff;border-top:1px solid var(--line);display:flex;z-index:30;padding-bottom:env(safe-area-inset-bottom);}
+  .bottom a{flex:1;text-align:center;padding:9px 2px 8px;font-size:11px;color:var(--sub);
+    text-decoration:none;cursor:pointer;}
+  .bottom a .ic{font-size:20px;display:block;}
+  .bottom a.on{color:var(--accent);font-weight:800;}
+  .back{background:none;border:none;color:var(--accent);font-size:14px;cursor:pointer;
+    padding:0;font-weight:700;margin-bottom:8px;}
+  .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%);background:rgba(40,34,28,.92);
+    color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;z-index:90;max-width:90%;
+    opacity:0;transition:opacity .2s;pointer-events:none;}
+  .toast.show{opacity:1;}
+  .modal-mask{position:fixed;inset:0;background:rgba(40,34,28,.45);z-index:80;display:none;
+    align-items:center;justify-content:center;padding:20px;}
+  .modal-mask.show{display:flex;}
+  .modal{background:#fff;border-radius:18px;padding:20px;max-width:340px;width:100%;
+    box-shadow:var(--shadow);}
+  .modal h3{margin:0 0 10px;font-size:16px;}
+  .modal p{font-size:14px;color:var(--sub);margin:0 0 16px;}
+  .modal .row{display:flex;gap:10px;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .task{background:#fff;border-radius:14px;padding:13px;box-shadow:var(--shadow);margin-bottom:10px;
+    display:flex;align-items:center;gap:10px;}
+  .task .t-ic{font-size:22px;}
+  .task .t-body{flex:1;}
+  .task .t-body b{font-size:14px;}
+  .task .t-body p{margin:2px 0 0;font-size:12px;color:var(--sub);}
+  .ach{display:flex;align-items:center;gap:12px;background:#fff;border-radius:16px;padding:13px;
+    box-shadow:var(--shadow);margin-bottom:10px;}
+  .ach .a-ic{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;
+    justify-content:center;font-size:26px;background:#f1ece3;}
+  .ach.on .a-ic{background:#fff3d6;}
+  .ach.lock{opacity:.6;}
+  .ach .a-body{flex:1;}
+  .ach .a-body b{font-size:14px;}
+  .ach .a-body p{margin:2px 0 0;font-size:12px;color:var(--sub);}
+  .sub{font-size:12px;color:var(--sub);}
+  .row-flex{display:flex;gap:8px;flex-wrap:wrap;}
+  .q-title{font-size:15px;font-weight:800;margin:6px 0 8px;}
+  .photo{width:100%;border-radius:12px;margin-top:6px;}
+  .tag{display:inline-block;background:#f1ece3;border-radius:8px;padding:2px 8px;font-size:11px;margin:2px 4px 2px 0;color:var(--sub);}
+  .hr{height:1px;background:var(--line);margin:12px 0;border:none;}
+  .mini-stats{display:flex;gap:8px;flex-wrap:wrap;}
+  .mini-stats .ms{flex:1;min-width:90px;background:#fff;border-radius:14px;padding:10px;text-align:center;box-shadow:var(--shadow);}
+  .mini-stats .ms b{font-size:18px;color:var(--accent);}
+  .mini-stats .ms span{font-size:11px;color:var(--sub);}
+  .catstat{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px;}
+  .catstat:last-child{border-bottom:none;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast"></div>
+<div class="modal-mask" id="modalMask">
+  <div class="modal">
+    <h3 id="modalTitle"></h3>
+    <p id="modalText"></p>
+    <div class="row">
+      <button class="btn ghost sm" id="modalCancel">取消</button>
+      <button class="btn sm" id="modalOk">确定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============ 基础配置 ============ */
+const CATEGORIES=[
+ {key:'park',emoji:'🌳',name:'公园绿地',color:'#7cc36b'},
+ {key:'animal',emoji:'🦁',name:'动物世界',color:'#f0a84b'},
+ {key:'science',emoji:'🔬',name:'科学探索',color:'#4bb3e0'},
+ {key:'library',emoji:'📚',name:'图书馆',color:'#9b7bd6'},
+ {key:'museum',emoji:'🏛️',name:'博物馆',color:'#d6708b'},
+ {key:'culture',emoji:'🎨',name:'文化体验',color:'#e08b4b'},
+ {key:'walk',emoji:'🚶',name:'城市漫步',color:'#5bbf9e'},
+ {key:'rain',emoji:'☔',name:'雨天室内活动',color:'#6c9bd6'},
+ {key:'nature',emoji:'🏕️',name:'自然教育',color:'#8bbf5b'},
+ {key:'play',emoji:'🎡',name:'游乐体验',color:'#e0708c'},
+];
+const CATMAP={}; CATEGORIES.forEach(c=>CATMAP[c.key]=c);
+const STORE_KEY='city_explore_map_v1';
+
+/* 周末选择 → 分类映射 */
+const MOODS=[
+ {key:'outdoor',emoji:'🌳',label:'想在户外跑一跑',cats:['park','nature','walk']},
+ {key:'animal',emoji:'🦁',label:'想认识动物',cats:['animal']},
+ {key:'brain',emoji:'🔬',label:'想动脑筋',cats:['science']},
+ {key:'read',emoji:'📚',label:'想安静阅读',cats:['library']},
+ {key:'culture',emoji:'🏛️',label:'想了解历史文化',cats:['museum','culture','walk']},
+ {key:'fresh',emoji:'🎨',label:'想体验新鲜事物',cats:['culture','play','museum']},
+ {key:'rain',emoji:'☔',label:'下雨了，想在室内玩',cats:['rain']},
+];
+
+/* 探索任务模板（本地预置，无需AI） */
+const TASK_TPL={
+ park:[
+   ['寻找两片形状不同的树叶','低头看看地面，捡起两片叶子比一比形状'],
+   ['听一听周围有几种声音','闭上眼睛，数数能听到几种声音'],
+   ['找一找不同颜色的花','在草地上找出红、黄、紫三种颜色的花'],
+   ['观察天空中的云','抬头看看云，它像什么小动物？'],
+ ],
+ animal:[
+   ['观察一种动物怎么走路','选一种动物，看它是走、跳还是爬'],
+   ['寻找动物喜欢吃的食物','它吃什么？在说明牌上找答案'],
+   ['看看它生活的环境','它的家是水池、笼子还是草地？'],
+ ],
+ science:[
+   ['找到一个最让你好奇的展品','哪个装置让你最想问“为什么”'],
+   ['观察一个互动装置','动手试一试，看看会发生什么'],
+   ['想一想它为什么这样运作','把你的猜想说给爸爸妈妈听'],
+ ],
+ library:[
+   ['找一本封面有趣的书','去书架挑一本你第一眼喜欢的书'],
+   ['选一个最喜欢的故事','读一读，选出你最爱的那一个'],
+   ['找一个自己不认识的新词','圈出一个不认识的字，回家查一查'],
+ ],
+ museum:[
+   ['寻找一件特别的展品','哪一件最让你惊讶？'],
+   ['看看以前的人使用什么工具','和现在的工具有什么不一样？'],
+   ['选一个最想了解的东西','把它记在心里，回家查资料'],
+ ],
+ culture:[
+   ['找一处特别的建筑细节','抬头看房檐、窗花或颜色'],
+   ['发现一种有趣的颜色或图案','拍下来或画下来'],
+   ['说说自己最喜欢的地方','为什么喜欢这里？'],
+ ],
+ walk:[
+   ['观察一种街道标志','认一认路牌、红绿灯或店招'],
+   ['找找建筑上的特别图案','砖墙、雕塑或壁画里藏了什么？'],
+   ['发现一个之前没注意的地方','这条街有什么新发现？'],
+ ],
+ rain:[
+   ['在室内找一个有趣的角度','从不同位置看看同一个展品'],
+   ['发现一种新颜色或形状','数数场馆里有多少种蓝色'],
+   ['说说今天最开心的事','用一句话记录下来'],
+ ],
+ nature:[
+   ['认识一种树木或植物','摸一摸叶子，闻一闻气味'],
+   ['找一种小昆虫','不要打扰它，远远地观察'],
+   ['收集一种自然素材','一片石头、一根羽毛（若允许）'],
+ ],
+ play:[
+   ['挑战一个项目','选一个最想玩的游戏'],
+   ['数一数玩了几个项目','用画笔或照片记下来'],
+   ['给今天打分','1到5颗星，你打几颗？'],
+ ],
+};
+const GENERIC_TASKS=[
+ ['仔细观察一样东西','选一样东西，看看它有什么细节'],
+ ['画下今天的发现','用纸笔画一画你看到的有趣事物'],
+ ['说一个今天学到的新词','把新词记在心里带回家'],
+];
+
+/* ============ 状态与持久化 ============ */
+let state=null;
+let view='home'; let viewParam=null;
+let mapScale=1, mapMode='map';
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+function demoLocations(){
+  const base=[
+    ['北海公园','西城区','公园绿地,城市漫步','户外','1—2小时','免费（园中园另购票）','无需预约','自然观察、划船、古建','春秋季','湖边注意安全','park,walk'],
+    ['北京动物园','西城区','动物世界','户外','半天','旺季¥15/淡季¥10','旺季建议预约','动物观察、喂食展示','天气好时','人多处看护好孩子','animal'],
+    ['中国科学技术馆','朝阳区','科学探索','室内','半天','主展厅¥30','需预约','科学实验、互动装置','工作日人少','儿童需由成人陪同','science'],
+    ['国家图书馆（少儿馆）','海淀区','图书馆','室内','1—2小时','免费','无需预约','绘本阅读、故事会','周末上午','保持安静','library'],
+    ['故宫博物院','东城区','博物馆,城市漫步','户外','半天','¥60（旺季）','需提前预约','古建筑、历史故事','避开酷暑严寒','步行量大，穿舒适鞋','museum,walk'],
+    ['北京自然博物馆','东城区','动物世界,科学探索','室内','2—3小时','免费（需预约）','需预约','恐龙、化石、生物演化','工作日','热门票源紧张','animal,science'],
+    ['中国美术馆','东城区','文化体验','室内','1—2小时','免费','需预约','绘画、雕塑欣赏','展览期间','馆内勿饮食','culture'],
+    ['中国儿童中心','西城区','文化体验,雨天室内活动','室内','2—3小时','部分活动收费','按活动预约','手工、亲子活动','周末','关注具体课程安排','culture,rain'],
+    ['北京欢乐谷','朝阳区','游乐体验','户外','一整天','¥260左右','无需预约','游乐设施、表演','天气好时','注意身高限制','play'],
+    ['奥林匹克森林公园','朝阳区','公园绿地,自然教育','户外','2—3小时','免费','无需预约','跑步、观鸟、自然认知','清晨或傍晚','园区较大，注意补水','park,nature'],
+  ];
+  return base.map((b,i)=>({
+    id:uid(), name:b[0], city:'北京', area:b[1], address:'（演示地址，请替换为真实位置）',
+    cats:b[10].split(','), indoor:b[3], duration:b[4], cost:b[5], needBooking:b[6],
+    theme:b[7], bestTime:b[8], notes:b[9], ageRange:'3—10岁',
+    demo:true, visited:false, createdAt:Date.now(),
+    pos:posFor(i)
+  }));
+}
+function posFor(i){
+  // 在示意地图范围内散布，固定坐标（非真实比例）
+  const xs=[90,300,500,160,420,250,560,110,360,470];
+  const ys=[90,230,140,300,260,120,320,200,330,90];
+  return {x:xs[i%xs.length], y:ys[i%ys.length]};
+}
+
+function defaultState(){
+  return {
+    locations:demoLocations(),
+    wishlist:[],          // {locationId, addedAt}
+    explorations:[],      // 探索记录/日记
+    plans:[],             // 周末计划
+    settings:{city:'北京'},
+  };
+}
+
+function load(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(!raw){ state=defaultState(); save(); return; }
+    const d=JSON.parse(raw);
+    if(!d || !Array.isArray(d.locations)){ state=defaultState(); save(); return; }
+    state=d;
+    if(!state.settings) state.settings={city:'北京'};
+    if(!Array.isArray(state.wishlist)) state.wishlist=[];
+    if(!Array.isArray(state.explorations)) state.explorations=[];
+    if(!Array.isArray(state.plans)) state.plans=[];
+  }catch(e){
+    toast('读取本地数据失败，已重置为演示数据');
+    state=defaultState(); save();
+  }
+}
+function save(){
+  try{
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  }catch(e){
+    toast('⚠️ 本地存储空间不足，部分数据（如照片）可能未保存');
+  }
+}
+
+/* ============ 工具函数 ============ */
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2200);
+}
+function confirmModal(title,text){
+  return new Promise(res=>{
+    const mask=document.getElementById('modalMask');
+    document.getElementById('modalTitle').textContent=title;
+    document.getElementById('modalText').textContent=text;
+    const ok=document.getElementById('modalOk'), cancel=document.getElementById('modalCancel');
+    const done=(v)=>{ mask.classList.remove('show'); ok.onclick=null; cancel.onclick=null; res(v); };
+    ok.onclick=()=>done(true); cancel.onclick=()=>done(false);
+    mask.classList.add('show');
+  });
+}
+function catMeta(key){ return CATMAP[key]||{emoji:'📍',name:key,color:'#bbb'}; }
+function locById(id){ return state.locations.find(l=>l.id===id); }
+function isWished(id){ return state.wishlist.some(w=>w.locationId===id); }
+function catEmojis(cats){ return cats.map(c=>catMeta(c).emoji).join(''); }
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+/* 费用/预算模糊匹配 */
+function matchBudget(loc,b){
+  if(b==='any') return true;
+  const c=(loc.cost||'');
+  if(b==='free') return /免费|免票|不收|无票|0元|不收费/.test(c);
+  if(b==='low') return !/贵|较高|¥\d{3,}|门票\d{3,}|元\d{3,}/.test(c);
+  return true;
+}
+
+/* ============ 筛选 ============ */
+function currentFilters(){
+  // 从 state._filters 读取（地图/列表共用）
+  return state._filters||{cat:'',area:'',q:'',indoor:'',visited:'',wish:false};
+}
+function applyFilters(list){
+  const f=currentFilters();
+  return list.filter(l=>{
+    if(f.cat && !(l.cats||[]).includes(f.cat)) return false;
+    if(f.area && l.area!==f.area) return false;
+    if(f.q && !(l.name||'').toLowerCase().includes(f.q.toLowerCase())) return false;
+    if(f.indoor==='indoor' && l.indoor!=='室内') return false;
+    if(f.indoor==='outdoor' && l.indoor!=='户外') return false;
+    if(f.visited==='yes' && !l.visited) return false;
+    if(f.visited==='no' && l.visited) return false;
+    if(f.wish && !isWished(l.id)) return false;
+    return true;
+  });
+}
+function areaOptions(){ return [...new Set(state.locations.map(l=>l.area).filter(Boolean))]; }
+
+/* ============ 渲染 ============ */
+const app=document.getElementById('app');
+function render(){
+  if(view==='home') return renderHome();
+  if(view==='map') return renderMap();
+  if(view==='weekend') return renderWeekend();
+  if(view==='detail') return renderDetail(viewParam);
+  if(view==='wishlist') return renderWishlist();
+  if(view==='footprint') return renderFootprint(viewParam);
+  if(view==='diary') return renderDiary();
+  if(view==='random') return renderRandom();
+  if(view==='tasks') return renderTasks(viewParam);
+  if(view==='plan') return renderPlan();
+  if(view==='achievements') return renderAchievements();
+  if(view==='stats') return renderStats();
+  if(view==='parent') return renderParent();
+  if(view==='parentAdd') return renderParentForm(viewParam);
+  return renderHome();
+}
+function navigate(v,p){ view=v; viewParam=p||null; window.scrollTo(0,0); render(); }
+
+function topbar(title,sub){
+  return `<header class="top"><h1>${title}</h1>${sub?`<p>${sub}</p>`:''}</header>`;
+}
+
+function renderHome(){
+  const total=state.locations.length;
+  const visited=state.locations.filter(l=>l.visited).length;
+  const wish=state.wishlist.length;
+  const recs=state.explorations.length;
+  app.innerHTML=`
+  ${topbar('🗺️ 我的城市探索地图','周末去哪玩？让孩子自己选一个地方 · 当前城市：'+esc(state.settings.city||'北京'))}
+  <div class="page">
+    <div class="stats">
+      <div class="stat"><b>${total}</b><span>📍 已收藏地点</span></div>
+      <div class="stat"><b>${visited}</b><span>👣 已探索地点</span></div>
+      <div class="stat"><b>${wish}</b><span>❤️ 还想去</span></div>
+      <div class="stat"><b>${recs}</b><span>🌟 探索记录</span></div>
+    </div>
+
+    ${mapMini()}
+
+    <div class="card">
+      <h2>🎯 周末去哪玩</h2>
+      <p class="sub">让孩子先选一种玩法，工具帮你从收藏里挑地方。</p>
+      <button class="btn" onclick="navigate('weekend')">🎯 周末去哪玩</button>
+      <button class="btn alt" onclick="navigate('random')">🎲 随机探索一个地方</button>
+    </div>
+
+    <div class="card">
+      <h2>快速入口</h2>
+      <div class="grid2">
+        <button class="btn soft sm" onclick="navigate('map')">🗺️ 城市探索地图</button>
+        <button class="btn soft sm" onclick="navigate('wishlist')">❤️ 我的愿望清单</button>
+        <button class="btn soft sm" onclick="navigate('footprint')">👣 我的探索足迹</button>
+        <button class="btn soft sm" onclick="navigate('parent')">👨‍👩‍👧 家长管理</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🏆 探索成就</h2>
+      <p class="sub">基于真实记录自动解锁，没有排名和竞争。</p>
+      <button class="btn ghost sm" onclick="navigate('achievements')">查看我的成就墙</button>
+    </div>
+  </div>`;
+  bindMap();
+}
+
+function mapMini(){
+  const locs=state.locations;
+  const markers=locs.map(l=>{
+    const m=catMeta((l.cats||[])[0]||'park');
+    const r=l.visited?9:7;
+    return `<g class="marker" onclick="navigate('detail','${l.id}')">
+      <circle cx="${l.pos.x}" cy="${l.pos.y}" r="${r}" fill="${m.color}" stroke="#fff" stroke-width="2"/>
+      <text x="${l.pos.x}" y="${l.pos.y+4}" font-size="10" text-anchor="middle">${m.emoji}</text>
+    </g>`;
+  }).join('');
+  return `<div class="map-wrap" style="margin-bottom:14px;">
+    <div class="map-tools">
+      <button onclick="zoomMap(1.2)">＋</button>
+      <button onclick="zoomMap(0.83)">－</button>
+    </div>
+    <svg class="map" viewBox="0 0 600 400" id="miniMap">
+      <rect x="0" y="0" width="600" height="400" fill="url(#bg)"/>
+      <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#eaf6ff"/><stop offset="1" stop-color="#f3fbf3"/></linearGradient></defs>
+      <text x="300" y="385" font-size="11" fill="#b9b0a0" text-anchor="middle">示意地图 · 非真实比例 · 不提供导航</text>
+      ${markers}
+    </svg>
+  </div>`;
+}
+function applyViewBox(svg){ if(!svg)return;
+  svg.setAttribute('viewBox',`${(300-300*mapScale)} ${(200-200*mapScale)} ${600*mapScale} ${400*mapScale}`); }
+function zoomMap(f){ mapScale*=f; if(mapScale<0.6)mapScale=0.6; if(mapScale>2.4)mapScale=2.4;
+  applyViewBox(document.getElementById('bigMap')||document.getElementById('miniMap')); }
+function bindMap(){ /* 占位，地图事件在 SVG 内部已绑定 */ }
+
+function renderMap(){
+  const f=currentFilters();
+  const locs=applyFilters(state.locations);
+  const areas=areaOptions();
+  app.innerHTML=`
+  ${topbar('🗺️ 城市探索地图','示意地图仅用于展示地点关系，不提供真实定位与导航。')}
+  <div class="page">
+    <div class="card">
+      <div class="row-flex" style="margin-bottom:8px;">
+        <input placeholder="🔍 搜索地点名称" value="${esc(f.q)}" oninput="setFilter('q',this.value)">
+      </div>
+      <div class="chips" id="catChips"></div>
+      <div class="row-flex" style="margin-top:8px;">
+        <select onchange="setFilter('area',this.value)">
+          <option value="">全部区域</option>${areas.map(a=>`<option ${f.area===a?'selected':''}>${a}</option>`).join('')}
+        </select>
+        <select onchange="setFilter('indoor',this.value)">
+          <option value="">室内/户外</option>
+          <option value="indoor" ${f.indoor==='indoor'?'selected':''}>仅室内</option>
+          <option value="outdoor" ${f.indoor==='outdoor'?'selected':''}>仅户外</option>
+        </select>
+      </div>
+      <div class="row-flex" style="margin-top:8px;">
+        <select onchange="setFilter('visited',this.value)">
+          <option value="">去过/没去过</option>
+          <option value="yes" ${f.visited==='yes'?'selected':''}>已去过</option>
+          <option value="no" ${f.visited==='no'?'selected':''}>还没去过</option>
+        </select>
+        <button class="btn ghost sm" onclick="clearFilters()">清空筛选</button>
+      </div>
+    </div>
+
+    <div class="map-wrap">
+      <div class="map-tools">
+        <button onclick="toggleMapMode()">${mapMode==='map'?'☰':'🗺️'}</button>
+        <button onclick="zoomMap(1.2)">＋</button>
+        <button onclick="zoomMap(0.83)">－</button>
+      </div>
+      <div id="mapBody"></div>
+    </div>
+    <p class="sub" style="text-align:center;margin-top:6px;">共 ${locs.length} 个地点${locs.length!==state.locations.length?`（已筛选，全部 ${state.locations.length}）`:''}</p>
+  </div>`;
+  renderMapBody();
+  renderCatChips('catChips');
+}
+
+function renderMapBody(){
+  const body=document.getElementById('mapBody'); if(!body)return;
+  const f=currentFilters(); const locs=applyFilters(state.locations);
+  if(mapMode==='list'){
+    body.innerHTML = locs.length? locs.map(locCard).join('') : `<div class="empty"><div class="big">🗺️</div>没有符合筛选条件的地点。<br>试试调整筛选，或去家长管理添加地点。</div>`;
+    return;
+  }
+  const markers=locs.map(l=>{
+    const m=catMeta((l.cats||[])[0]||'park');
+    const r=l.visited?10:8;
+    return `<g class="marker" onclick="navigate('detail','${l.id}')">
+      <circle cx="${l.pos.x}" cy="${l.pos.y}" r="${r}" fill="${m.color}" stroke="#fff" stroke-width="2"/>
+      <text x="${l.pos.x}" y="${l.pos.y+4}" font-size="10" text-anchor="middle">${m.emoji}</text>
+      ${l.visited?'<circle cx="'+(l.pos.x+10)+'" cy="'+(l.pos.y-10)+'" r="4" fill="#2f9e6b"/>':''}
+    </g>`;
+  }).join('');
+  body.innerHTML=`<svg class="map" viewBox="0 0 600 400" id="bigMap">
+      <rect x="0" y="0" width="600" height="400" fill="url(#bg2)"/>
+      <defs><linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#eaf6ff"/><stop offset="1" stop-color="#f3fbf3"/></linearGradient></defs>
+      <text x="300" y="385" font-size="11" fill="#b9b0a0" text-anchor="middle">示意地图 · 非真实比例 · 不提供导航</text>
+      ${markers}
+    </svg>`;
+  applyViewBox(body.querySelector('#bigMap'));
+}
+function toggleMapMode(){ mapMode=mapMode==='map'?'list':'map'; renderMap(); }
+
+function setFilter(k,v){ if(!state._filters)state._filters={}; state._filters[k]=v; renderMap(); }
+function clearFilters(){ state._filters={cat:'',area:'',q:'',indoor:'',visited:'',wish:false}; renderMap(); }
+
+function renderCatChips(containerId){
+  const c=document.getElementById(containerId); if(!c)return;
+  const f=currentFilters();
+  c.innerHTML=`<span class="pill ${!f.cat?'on':''}" onclick="setFilter('cat','')">全部</span>`+
+    CATEGORIES.map(cat=>`<span class="pill ${f.cat===cat.key?'on':''}" onclick="setFilter('cat','${cat.key}')">${cat.emoji} ${cat.name}</span>`).join('');
+}
+
+function locCard(l){
+  const m=catMeta((l.cats||[])[0]||'park');
+  const badges=[];
+  if(l.visited) badges.push('<span class="badge vis">去过</span>');
+  if(isWished(l.id)) badges.push('<span class="badge wish">❤️想去</span>');
+  if(l.demo) badges.push('<span class="badge demo">演示</span>');
+  return `<div class="loc-card" onclick="navigate('detail','${l.id}')">
+    <div class="loc-ic" style="background:${m.color}22;">${m.emoji}</div>
+    <div class="loc-meta">
+      <h3>${esc(l.name)} ${badges.join(' ')}</h3>
+      <p>${esc(l.area||'')} · ${esc(l.indoor||'')} · ${esc(l.duration||'')}</p>
+    </div>
+    <div style="color:var(--sub);font-size:20px;">›</div>
+  </div>`;
+}
+
+/* ============ 周末去哪玩 ============ */
+let weekend={mood:null,indoor:'',duration:'',budget:'any',area:''};
+function renderWeekend(){
+  const areas=['全部区域',...areaOptions()];
+  app.innerHTML=`
+  ${topbar('🎯 周末去哪玩','把大问题变成孩子能选的小游戏。')}
+  <div class="page">
+    <div class="card">
+      <div class="q-title">① 今天想怎么玩？</div>
+      <div class="chips">${MOODS.map(m=>`<span class="pill ${weekend.mood===m.key?'on':''}" onclick="pickMood('${m.key}')">${m.emoji} ${m.label}</span>`).join('')}</div>
+    </div>
+    <div class="card">
+      <div class="q-title">② 室内还是户外？</div>
+      <div class="chips">
+        <span class="pill ${weekend.indoor===''?'on':''}" onclick="pickIndoor('')">都可以</span>
+        <span class="pill ${weekend.indoor==='indoor'?'on':''}" onclick="pickIndoor('indoor')">室内</span>
+        <span class="pill ${weekend.indoor==='outdoor'?'on':''}" onclick="pickIndoor('outdoor')">户外</span>
+      </div>
+      <div class="q-title" style="margin-top:12px;">③ 希望玩多久？</div>
+      <div class="chips">
+        ${['1小时以内','1—2小时','半天','一整天'].map(d=>`<span class="pill ${weekend.duration===d?'on':''}" onclick="pickDur('${d}')">${d}</span>`).join('')}
+      </div>
+      <div class="q-title" style="margin-top:12px;">④ 预算偏好？</div>
+      <div class="chips">
+        ${[['free','免费优先'],['low','预算较低'],['any','不限']].map(b=>`<span class="pill ${weekend.budget===b[0]?'on':''}" onclick="pickBudget('${b[0]}')">${b[1]}</span>`).join('')}
+      </div>
+      <div class="q-title" style="margin-top:12px;">⑤ 想去哪个区域？</div>
+      <select onchange="weekend.area=this.value;renderWeekend()">
+        ${areas.map(a=>`<option ${weekend.area===a?'selected':''}>${a}</option>`).join('')}
+      </select>
+      <button class="btn" onclick="weekendFind()">🔍 帮我找找</button>
+      <button class="btn alt" onclick="weekendRandom()">🎲 随机抽一个</button>
+      <button class="btn ghost sm" onclick="weekendReset()">重新选择</button>
+    </div>
+    <div id="wkResult"></div>
+  </div>`;
+}
+function pickMood(k){ weekend.mood=k; renderWeekend(); }
+function pickIndoor(k){ weekend.indoor=k; renderWeekend(); }
+function pickDur(k){ weekend.duration=k; renderWeekend(); }
+function pickBudget(k){ weekend.budget=k; renderWeekend(); }
+function weekendReset(){ weekend={mood:null,indoor:'',duration:'',budget:'any',area:''}; renderWeekend(); }
+
+function weekendFilter(){
+  const cats=weekend.mood?MOODS.find(m=>m.key===weekend.mood).cats:null;
+  return state.locations.filter(l=>{
+    if(cats && !(l.cats||[]).some(c=>cats.includes(c))) return false;
+    if(weekend.indoor==='indoor' && l.indoor!=='室内') return false;
+    if(weekend.indoor==='outdoor' && l.indoor!=='户外') return false;
+    if(weekend.budget && !matchBudget(l,weekend.budget)) return false;
+    if(weekend.area && weekend.area!=='全部区域' && l.area!==weekend.area) return false;
+    return true;
+  });
+}
+function weekendFind(){
+  const r=weekendFilter();
+  const box=document.getElementById('wkResult');
+  if(!r.length){ box.innerHTML=`<div class="empty"><div class="big">🔍</div>暂时没有符合这些条件的地点，<br>可以调整筛选条件，或添加更多探索地点。</div>`; return; }
+  box.innerHTML=`<div class="card"><h2>为你找到 ${r.length} 个地方</h2>${r.map(locCard).join('')}</div>`;
+}
+function weekendRandom(){
+  const r=weekendFilter();
+  if(!r.length){ document.getElementById('wkResult').innerHTML=`<div class="empty"><div class="big">🎲</div>没有符合条件的地点，换个条件试试吧。</div>`; return; }
+  const pick=r[Math.floor(Math.random()*r.length)];
+  navigate('detail',pick.id);
+}
+
+/* ============ 地点详情 ============ */
+function renderDetail(id){
+  const l=locById(id); if(!l){ toast('地点不存在，可能已被删除'); return navigate('map'); }
+  const m=catMeta((l.cats||[])[0]||'park');
+  const catsHtml=(l.cats||[]).map(c=>{const x=catMeta(c);return `<span class="tag" style="background:${x.color}22;color:${x.color}">${x.emoji} ${x.name}</span>`;}).join('');
+  const field=(label,val)=> val?`<div class="catstat"><span>${label}</span><b style="font-weight:600;color:var(--ink);">${esc(val)}</b></div>`:'';
+  app.innerHTML=`
+  ${topbar(m.emoji+' '+esc(l.name), l.demo?'⚠️ 演示地点，请替换为真实地点':'')}
+  <div class="page">
+    <div class="card">
+      <div class="row-flex" style="margin-bottom:8px;">${catsHtml}</div>
+      <hr class="hr">
+      ${field('📍 所在区域',l.area)}
+      ${field('🏠 场地类型',l.indoor)}
+      ${field('⏰ 建议游玩',l.duration)}
+      ${field('👶 适合年龄',l.ageRange)}
+      ${field('💰 费用说明',l.cost)}
+      ${field('📅 是否预约',l.needBooking)}
+      ${field('👀 探索主题',l.theme)}
+      ${field('🌤️ 推荐时间',l.bestTime)}
+      ${field('📝 注意事项',l.notes)}
+      ${field('🗺️ 位置描述',l.address)}
+      ${field('🏙️ 城市',l.city)}
+    </div>
+    <div class="grid2">
+      <button class="btn soft sm ${isWished(l.id)?'':'alt'}" onclick="toggleWish('${l.id}')">${isWished(l.id)?'💔 移出愿望':'❤️ 我想去'}</button>
+      <button class="btn soft sm" onclick="markVisited('${l.id}')">${l.visited?'↩️ 取消去过':'✅ 我来过这里'}</button>
+    </div>
+    <div class="grid2" style="margin-top:8px;">
+      <button class="btn blue sm" onclick="navigate('tasks','${l.id}')">🎯 生成探索任务</button>
+      <button class="btn blue sm" onclick="navigate('footprint','${l.id}')">📖 写一篇探索日记</button>
+    </div>
+    <div class="grid2" style="margin-top:8px;">
+      <button class="btn ghost sm" onclick="navigate('parentAdd','${l.id}')">✏️ 编辑地点</button>
+      <button class="btn ghost sm" onclick="delLocation('${l.id}')">🗑️ 删除地点</button>
+    </div>
+    <button class="back" onclick="navigate('map')">‹ 返回地图</button>
+  </div>`;
+}
+function toggleWish(id){
+  if(isWished(id)){ state.wishlist=state.wishlist.filter(w=>w.locationId!==id); toast('已移出愿望清单'); }
+  else{ state.wishlist.push({locationId:id,addedAt:Date.now()}); toast('❤️ 已加入愿望清单'); }
+  save(); render();
+}
+function markVisited(id){
+  const l=locById(id); if(!l)return;
+  l.visited=!l.visited; save(); render();
+}
+async function delLocation(id){
+  const l=locById(id); if(!l)return;
+  const ok=await confirmModal('删除地点','确定删除「'+l.name+'」吗？此操作不可恢复。');
+  if(!ok)return;
+  state.locations=state.locations.filter(x=>x.id!==id);
+  state.wishlist=state.wishlist.filter(w=>w.locationId!==id);
+  save(); toast('已删除'); navigate('map');
+}
+
+/* ============ 愿望清单 ============ */
+function renderWishlist(){
+  const items=state.wishlist.map(w=>locById(w.locationId)).filter(Boolean);
+  app.innerHTML=`
+  ${topbar('❤️ 我的愿望清单','孩子最近想去的地方，下次直接安排。')}
+  <div class="page">
+    ${items.length? items.map(l=>{
+      const m=catMeta((l.cats||[])[0]||'park');
+      return `<div class="loc-card" onclick="navigate('detail','${l.id}')">
+        <div class="loc-ic" style="background:${m.color}22;">${m.emoji}</div>
+        <div class="loc-meta">
+          <h3>${esc(l.name)} ${l.visited?'<span class="badge vis">去过</span>':'<span class="badge wish">还没去</span>'}</h3>
+          <p>${esc(l.area||'')} · ${m.name}</p>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button class="btn soft mini" onclick="event.stopPropagation();navigate('weekend')">安排周末</button>
+          <button class="btn ghost mini" onclick="event.stopPropagation();toggleWish('${l.id}')">移出</button>
+        </div>
+      </div>`;
+    }).join('') : `<div class="empty"><div class="big">❤️</div>还没有想去的地点。<br>在地图里点「❤️ 我想去」就能收集起来。</div>`}
+    <button class="back" onclick="navigate('home')">‹ 返回首页</button>
+  </div>`;
+}
+
+/* ============ 探索足迹 / 日记表单 ============ */
+function renderFootprint(prefillId){
+  const l=prefillId?locById(prefillId):null;
+  app.innerHTML=`
+  ${topbar('👣 记录这次探索','把有趣的发现留下来，地图会越来越丰富。')}
+  <div class="page">
+    <div class="card">
+      <label class="fld"><span>今天去了哪里 *</span>
+        <select id="f_loc">${state.locations.length?state.locations.map(x=>`<option value="${x.id}" ${prefillId===x.id?'selected':''}>${esc(x.name)}</option>`).join(''):'<option>请先添加地点</option>'}</select>
+      </label>
+      <label class="fld"><span>探索日期</span><input type="date" id="f_date" value="${new Date().toISOString().slice(0,10)}"></label>
+      <label class="fld"><span>同行人员（可选）</span><input id="f_companions" placeholder="如：爸爸、妈妈"></label>
+      <label class="fld"><span>看到了什么</span><textarea id="f_saw" placeholder="看到了有趣的东西…"></textarea></label>
+      <label class="fld"><span>最喜欢什么</span><textarea id="f_fav" placeholder="最喜欢的事…"></textarea></label>
+      <label class="fld"><span>学到了什么</span><textarea id="f_learn" placeholder="学到了新知识…"></textarea></label>
+      <label class="fld"><span>下次还想做什么</span><textarea id="f_next" placeholder="下次还想来…"></textarea></label>
+      <div class="q-title" style="margin-top:12px;">今天的心情</div>
+      <div class="chips" id="moodChips">
+        ${['😀 很开心','😊 开心','😐 一般','😴 有点累','🤩 超兴奋'].map((m,i)=>`<span class="pill" data-mood="${m}" onclick="selMood(this)">${m}</span>`).join('')}
+      </div>
+      <label class="fld"><span>添加一张本地照片（可选，将自动压缩）</span>
+        <input type="file" id="f_photo" accept="image/*" onchange="onPhoto(this)">
+      </label>
+      <div id="f_photopreview"></div>
+      <button class="btn alt" onclick="saveExploration()">💾 保存探索记录</button>
+    </div>
+    <button class="back" onclick="navigate('home')">‹ 返回首页</button>
+  </div>`;
+  window._mood=''; window._photo=null;
+}
+function selMood(el){ document.querySelectorAll('#moodChips .pill').forEach(p=>p.classList.remove('on')); el.classList.add('on'); window._mood=el.dataset.mood; }
+function onPhoto(input){
+  const file=input.files[0]; if(!file)return;
+  compressImage(file,(data,err)=>{
+    if(err||!data){ toast('⚠️ 照片未能保存，请重试或跳过'); return; }
+    window._photo=data;
+    document.getElementById('f_photopreview').innerHTML=`<img class="photo" src="${data}">`;
+    toast('照片已压缩，保存时写入');
+  });
+}
+function compressImage(file,cb){
+  const reader=new FileReader();
+  reader.onerror=()=>cb(null,new Error('read'));
+  reader.onload=e=>{
+    const img=new Image();
+    img.onerror=()=>cb(null,new Error('img'));
+    img.onload=()=>{
+      let w=img.width,h=img.height; const max=900;
+      if(w>max||h>max){ const r=Math.min(max/w,max/h); w=Math.round(w*r); h=Math.round(h*r); }
+      const c=document.createElement('canvas'); c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      try{ cb(c.toDataURL('image/jpeg',0.6)); }catch(err){ cb(null,err); }
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function saveExploration(){
+  const locId=document.getElementById('f_loc').value;
+  if(!locId || !locById(locId)){ toast('请选择地点'); return; }
+  const rec={
+    id:uid(), locationId:locId,
+    date:document.getElementById('f_date').value||new Date().toISOString().slice(0,10),
+    companions:document.getElementById('f_companions').value,
+    saw:document.getElementById('f_saw').value,
+    favorite:document.getElementById('f_fav').value,
+    learned:document.getElementById('f_learn').value,
+    nextTime:document.getElementById('f_next').value,
+    mood:window._mood||'', photo:window._photo||null,
+    createdAt:Date.now()
+  };
+  state.explorations.unshift(rec);
+  const l=locById(locId); if(l) l.visited=true;
+  save();
+  toast('🌟 已保存探索记录');
+  navigate('diary');
+}
+
+function renderDiary(){
+  const list=[...state.explorations].sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.createdAt-a.createdAt);
+  app.innerHTML=`
+  ${topbar('📖 我的城市探索日记','按日期倒序，记录每一次新发现。')}
+  <div class="page">
+    ${(()=>{
+      if(!list.length) return `<div class="empty"><div class="big">📖</div>还没有探索日记。<br>下一次出门时，记得把有趣的发现记录下来。</div>`;
+      return list.map(r=>{
+        const l=locById(r.locationId);
+        return `<div class="card">
+          <div class="row-flex" style="justify-content:space-between;">
+            <b>📅 ${esc(r.date)}</b>
+            <span class="sub">${esc(l?l.name:'未知地点')}</span>
+          </div>
+          ${r.mood?`<p class="sub">心情：${esc(r.mood)}</p>`:''}
+          ${r.saw?`<p>👀 看到：${esc(r.saw)}</p>`:''}
+          ${r.favorite?`<p>💛 喜欢：${esc(r.favorite)}</p>`:''}
+          ${r.learned?`<p>💡 学到：${esc(r.learned)}</p>`:''}
+          ${r.nextTime?`<p>➡️ 下次：${esc(r.nextTime)}</p>`:''}
+          ${r.photo?`<img class="photo" src="${r.photo}">`:''}
+          <div class="row-flex" style="margin-top:8px;">
+            <button class="btn ghost mini" onclick="delDiary('${r.id}')">删除</button>
+          </div>
+        </div>`;
+      }).join('');
+    })()}
+    <button class="back" onclick="navigate('home')">‹ 返回首页</button>
+  </div>`;
+}
+async function delDiary(id){
+  const ok=await confirmModal('删除日记','确定删除这篇探索日记吗？此操作不可恢复。');
+  if(!ok)return;
+  state.explorations=state.explorations.filter(x=>x.id!==id);
+  save(); toast('已删除'); renderDiary();
+}
+
+/* ============ 随机探索 ============ */
+function renderRandom(){
+  app.innerHTML=`
+  ${topbar('🎲 随机探索一个地方','让今天充满惊喜。')}
+  <div class="page">
+    <div class="card" id="randBox"><div class="empty"><div class="big">🎲</div>点击下方按钮，从收藏里抽一个地方。</div></div>
+    <button class="btn alt" onclick="doRandom()">🎲 抽一个</button>
+    <button class="back" onclick="navigate('home')">‹ 返回首页</button>
+  </div>`;
+}
+function doRandom(){
+  const list=applyFilters(state.locations);
+  const box=document.getElementById('randBox');
+  if(!list.length){ box.innerHTML=`<div class="empty"><div class="big">🗺️</div>没有可选地点，先去添加或放宽筛选。</div>`; return; }
+  const pick=list[Math.floor(Math.random()*list.length)];
+  const m=catMeta((pick.cats||[])[0]||'park');
+  box.innerHTML=`<h2 style="text-align:center;">🎲 今天去这里探索</h2>
+    <div style="text-align:center;font-size:22px;font-weight:800;margin:8px 0;">${m.emoji} ${esc(pick.name)}</div>
+    <p class="sub" style="text-align:center;">${m.name} · ${esc(pick.area||'')} · ${esc(pick.duration||'')}</p>
+    <p class="sub" style="text-align:center;">👀 探索主题：${esc(pick.theme||'自由探索')}</p>
+    <div class="grid2">
+      <button class="btn alt sm" onclick="navigate('detail','${pick.id}')">就选这里</button>
+      <button class="btn blue sm" onclick="toggleWish('${pick.id}')">加入愿望清单</button>
+    </div>
+    <button class="btn ghost sm" onclick="doRandom()">再抽一次</button>`;
+}
+
+/* ============ 探索任务卡 ============ */
+function renderTasks(id){
+  const l=locById(id); if(!l){ toast('地点不存在'); return navigate('map'); }
+  const tpl=(l.cats||[]).map(c=>TASK_TPL[c]).filter(Boolean).flat();
+  const tasks=tpl.length?tpl:GENERIC_TASKS;
+  const m=catMeta((l.cats||[])[0]||'park');
+  app.innerHTML=`
+  ${topbar('🎯 '+m.emoji+' 今日探索任务', esc(l.name))}
+  <div class="page">
+    <p class="sub">以下任务由地点分类本地生成，无需联网。</p>
+    <div id="taskList">${tasks.map((t,i)=>taskItem(t,i)).join('')}</div>
+    <button class="back" onclick="navigate('detail','${id}')">‹ 返回地点详情</button>
+  </div>`;
+}
+function taskItem(t,i){
+  return `<div class="task">
+    <div class="t-ic">🔍</div>
+    <div class="t-body"><b>${esc(t[0])}</b><p>${esc(t[1])}</p></div>
+    <button class="btn alt mini" onclick="doneTask(${i})">✅ 我发现了</button>
+    <button class="btn ghost mini" onclick="nextTask(${i})">换一个</button>
+  </div>`;
+}
+function doneTask(i){ toast('🌟 已记录完成，真棒！'); }
+function nextTask(i){ toast('换个任务继续探索吧～'); }
+
+/* ============ 周末计划 ============ */
+function renderPlan(){
+  app.innerHTML=`
+  ${topbar('🗓️ 我的周末探索计划','根据已收藏地点生成简单安排。')}
+  <div class="page">
+    <div class="card">
+      <label class="fld"><span>出行日期</span><input type="date" id="p_date" value="${new Date().toISOString().slice(0,10)}"></label>
+      <label class="fld"><span>希望游玩时长</span>
+        <select id="p_dur">${['1—2小时','半天','一整天'].map(d=>`<option>${d}</option>`).join('')}</select></label>
+      <label class="fld"><span>活动类型</span>
+        <select id="p_type"><option value="">不限</option>${CATEGORIES.map(c=>`<option>${c.name}</option>`).join('')}</select></label>
+      <label class="fld"><span>室内或户外</span>
+        <select id="p_in"><option value="">都可以</option><option value="室内">室内</option><option value="户外">户外</option></select></label>
+      <label class="fld"><span>预算偏好</span>
+        <select id="p_budget">${[['any','不限'],['free','免费优先'],['low','预算较低']].map(b=>`<option value="${b[0]}">${b[1]}</option>`).join('')}</select></label>
+      <label class="fld"><span>交通方式</span><input id="p_trans" placeholder="如：自驾 / 地铁"></label>
+      <label class="fld"><span>希望安排地点数量</span><input type="number" id="p_count" value="2" min="1" max="6"></label>
+      <button class="btn" onclick="genPlan()">✨ 生成计划</button>
+    </div>
+    <div id="planResult"></div>
+    <button class="back" onclick="navigate('home')">‹ 返回首页</button>
+  </div>`;
+}
+function genPlan(){
+  const type=document.getElementById('p_type').value;
+  const indoor=document.getElementById('p_in').value;
+  const budget=document.getElementById('p_budget').value;
+  const count=Math.max(1,Math.min(6,parseInt(document.getElementById('p_count').value)||2));
+  let pool=state.locations.filter(l=>{
+    if(type && !(l.cats||[]).some(c=>CATMAP[c]&&CATMAP[c].name===type)) return false;
+    if(indoor && l.indoor!==indoor) return false;
+    if(budget && !matchBudget(l,budget)) return false;
+    return true;
+  });
+  if(!pool.length){ document.getElementById('planResult').innerHTML=`<div class="empty"><div class="big">🗓️</div>没有符合条件的地点，调整一下再生成吧。</div>`; return; }
+  pool=pool.sort(()=>Math.random()-0.5).slice(0,count);
+  const dur=document.getElementById('p_dur').value;
+  // 时间块（仅示例，不计算真实路程）
+  const blocks={ '1—2小时':[['09:30','到达地点'],['10:00','开始探索任务'],['11:00','自由活动']],
+    '半天':[['09:30','到达地点'],['10:00','探索任务'],['11:00','自由活动'],['11:30','分享新发现']],
+    '一整天':[['09:30','到达地点'],['10:00','探索任务'],['11:30','午餐休息'],['13:30','第二个地点'],['15:00','自由活动'],['16:00','分享今天的新发现']] }[dur]||[];
+  const plan={ id:uid(), date:document.getElementById('p_date').value, dur, type, indoor, budget,
+    trans:document.getElementById('p_trans').value, locations:pool.map(l=>l.id), manualOrder:pool.map(l=>l.id), createdAt:Date.now() };
+  state.plans.unshift(plan); save();
+  const box=document.getElementById('planResult');
+  box.innerHTML=`<div class="card">
+    <h2>🗓️ ${esc(plan.date)} 探索计划</h2>
+    <p class="sub">交通：${esc(plan.trans||'自行安排')} ｜ 地点顺序仅供参考，请根据真实交通情况调整。</p>
+    ${pool.map((l,i)=>{
+      const m=catMeta((l.cats||[])[0]||'park');
+      return `<div class="loc-card" onclick="navigate('detail','${l.id}')">
+        <div class="loc-ic" style="background:${m.color}22;">${m.emoji}</div>
+        <div class="loc-meta"><h3>${i+1}. ${esc(l.name)}</h3><p>${m.name} · ${esc(l.area||'')}</p></div>
+      </div>`;
+    }).join('')}
+    <div class="q-title" style="margin-top:10px;">⏰ 时间建议</div>
+    ${blocks.map(b=>`<div class="catstat"><span>${b[0]}</span><b style="font-weight:600;">${b[1]}</b></div>`).join('')}
+    <button class="btn ghost sm" onclick="delPlan('${plan.id}')">删除此计划</button>
+  </div>`;
+  toast('计划已生成并保存');
+}
+async function delPlan(id){
+  const ok=await confirmModal('删除计划','确定删除这个周末计划吗？');
+  if(!ok)return;
+  state.plans=state.plans.filter(p=>p.id!==id); save(); toast('已删除'); renderPlan();
+}
+
+/* ============ 成就墙 ============ */
+function computeAchievements(){
+  const cats=new Set(); const visitedIds=new Set();
+  state.explorations.forEach(e=>{ const l=locById(e.locationId); if(l){ (l.cats||[]).forEach(c=>cats.add(c)); visitedIds.add(l.id);} });
+  return [
+    {key:'natural',emoji:'🌳',name:'自然观察员',desc:'记录过自然观察活动',on:cats.has('park')||cats.has('nature')},
+    {key:'animal',emoji:'🦁',name:'动物发现家',desc:'完成过动物主题探索记录',on:cats.has('animal')},
+    {key:'science',emoji:'🔬',name:'科学小探索家',desc:'完成过科学主题探索记录',on:cats.has('science')},
+    {key:'reading',emoji:'📚',name:'阅读小旅人',desc:'记录过图书馆或阅读活动',on:cats.has('library')},
+    {key:'guide',emoji:'🏛️',name:'城市小向导',desc:'探索并记录过多个不同地点',on:visitedIds.size>=3},
+  ];
+}
+function renderAchievements(){
+  const list=computeAchievements();
+  app.innerHTML=`
+  ${topbar('🏆 我的探索成就','非竞争性成就，基于真实记录自动解锁。')}
+  <div class="page">
+    ${list.map(a=>`<div class="ach ${a.on?'on':'lock'}">
+      <div class="a-ic">${a.emoji}</div>
+      <div class="a-body"><b>${a.name} ${a.on?'✅':'🔒'}</b><p>${a.desc}</p></div>
+    </div>`).join('')}
+    <p class="sub" style="text-align:center;">完成探索记录后，对应成就会自动点亮。</p>
+    <button class="back" onclick="navigate('home')">‹ 返回首页</button>
+  </div>`;
+}
+
+/* ============ 统计 ============ */
+function renderStats(){
+  const total=state.locations.length;
+  const visitedIds=new Set(state.locations.filter(l=>l.visited).map(l=>l.id));
+  const exploreCount=state.explorations.length;
+  const taskDone=0; // 任务完成仅即时记录，不持久化统计
+  const catCount={};
+  state.explorations.forEach(e=>{ const l=locById(e.locationId); if(l)(l.cats||[]).forEach(c=>catCount[c]=(catCount[c]||0)+1); });
+  const catRows=CATEGORIES.map(c=>`<div class="catstat"><span>${c.emoji} ${c.name}</span><b>${catCount[c.key]||0} 次</b></div>`).join('');
+  app.innerHTML=`
+  ${topbar('📊 我的探索记录','所有数字都来自真实保存的数据。')}
+  <div class="page">
+    <div class="mini-stats">
+      <div class="ms"><b>${total}</b><span>已收藏地点</span></div>
+      <div class="ms"><b>${visitedIds.size}</b><span>已探索地点</span></div>
+      <div class="ms"><b>${exploreCount}</b><span>累计探索次数</span></div>
+    </div>
+    <div class="mini-stats" style="margin-top:8px;">
+      <div class="ms"><b>${taskDone}</b><span>已完成探索任务</span></div>
+      <div class="ms"><b>${exploreCount}</b><span>探索日记数量</span></div>
+      <div class="ms"><b>${state.wishlist.length}</b><span>愿望清单</span></div>
+    </div>
+    <div class="card"><h2>分类统计</h2>${catRows}</div>
+    <button class="back" onclick="navigate('home')">‹ 返回首页</button>
+  </div>`;
+}
+
+/* ============ 家长管理 ============ */
+function renderParent(){
+  const demoCount=state.locations.filter(l=>l.demo).length;
+  app.innerHTML=`
+  ${topbar('👨‍👩‍👧 家长管理','管理地点、分类、记录与数据。')}
+  <div class="page">
+    <div class="card">
+      <h2>地点管理</h2>
+      <button class="btn alt" onclick="navigate('parentAdd')">＋ 添加探索地点</button>
+      ${demoCount?`<button class="btn ghost sm" onclick="delAllDemo()">删除全部演示地点（${demoCount}）</button>
+        <p class="sub">演示地点仅为示例，建议替换为北京真实地点。</p>`:''}
+      <button class="btn ghost sm" onclick="navigate('map')">查看 / 编辑 / 删除地点</button>
+    </div>
+    <div class="card">
+      <h2>数据管理</h2>
+      <button class="btn blue sm" onclick="exportData()">⬇️ 导出数据（JSON）</button>
+      <button class="btn blue sm" onclick="document.getElementById('imp').click()">⬆️ 导入数据（JSON）</button>
+      <input type="file" id="imp" accept="application/json,.json" style="display:none" onchange="importData(this)">
+      <button class="btn ghost sm" onclick="loadDemo()">恢复演示数据</button>
+      <button class="btn ghost sm" onclick="clearAll()">清空全部数据</button>
+    </div>
+    <div class="card">
+      <h2>🏙️ 目标城市</h2>
+      <p>当前城市：<b>${esc(state.settings.city||'北京')}</b></p>
+      <label class="fld"><span>切换到你所在的城市</span>
+        <input id="n_city_set" placeholder="如：上海、广州、深圳"></label>
+      <button class="btn soft sm" onclick="setCity()">保存城市</button>
+      <p class="sub">切换城市会删除属于北京的演示地点，请改用你所在城市的真实地点。</p>
+    </div>
+    <button class="back" onclick="navigate('home')">‹ 返回首页</button>
+  </div>`;
+}
+async function setCity(){
+  const v=document.getElementById('n_city_set').value.trim();
+  if(!v){ toast('请输入城市名'); return; }
+  const demo=state.locations.filter(l=>l.demo);
+  if(demo.length){
+    const ok=await confirmModal('切换城市','当前演示地点属于北京。切换到「'+v+'」将删除这些北京演示数据，确定吗？');
+    if(!ok) return;
+    state.locations=state.locations.filter(l=>!l.demo);
+  }
+  state.settings.city=v; save(); toast('已切换到 '+v); renderParent();
+}
+async function delAllDemo(){
+  const ok=await confirmModal('删除演示地点','将删除全部 '+state.locations.filter(l=>l.demo).length+' 个演示地点，确定吗？');
+  if(!ok)return;
+  state.locations=state.locations.filter(l=>!l.demo);
+  save(); toast('已删除演示地点'); renderParent();
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='城市探索地图_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click(); URL.revokeObjectURL(url); toast('已导出 JSON');
+}
+function importData(input){
+  const file=input.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(!d || !Array.isArray(d.locations)) throw new Error('格式错误');
+      if(!confirm('导入将覆盖当前数据，确定继续？')) { input.value=''; return; }
+      state={ locations:d.locations||[], wishlist:d.wishlist||[], explorations:d.explorations||[], plans:d.plans||[],
+        settings:d.settings||{city:'北京'} };
+      save(); toast('✅ 导入成功'); input.value=''; navigate('home');
+    }catch(err){ toast('⚠️ 导入失败：数据格式不正确，未改动现有数据'); input.value=''; }
+  };
+  reader.readAsText(file);
+}
+async function loadDemo(){
+  const ok=await confirmModal('恢复演示数据','将把北京演示地点加入当前列表（不删除已有地点），继续？');
+  if(!ok)return;
+  demoLocations().forEach(l=>state.locations.push(l)); save(); toast('已添加演示地点'); renderParent();
+}
+async function clearAll(){
+  const ok=await confirmModal('清空全部数据','将删除所有地点、愿望清单、探索记录、日记与计划，此操作不可恢复！');
+  if(!ok)return;
+  state={locations:[],wishlist:[],explorations:[],plans:[],settings:{city:'北京'}};
+  save(); toast('已清空全部数据'); navigate('home');
+}
+
+/* ============ 添加 / 编辑地点表单 ============ */
+function renderParentForm(editId){
+  const l=editId?locById(editId):null;
+  const title=l?'✏️ 编辑地点':'＋ 添加探索地点';
+  const checked=(arr,k)=> (arr||[]).includes(k)?'checked':'';
+  app.innerHTML=`
+  ${topbar(title, l&&l.demo?'⚠️ 演示地点，建议改为真实信息':'')}
+  <div class="page">
+    <div class="card">
+      <label class="fld"><span>地点名称 *</span><input id="n_name" value="${esc(l?l.name:'')}" placeholder="如：xx公园"></label>
+      <label class="fld"><span>所在城市</span><input id="n_city" value="${esc(l?l.city:'北京')}"></label>
+      <label class="fld"><span>所在区域</span><input id="n_area" value="${esc(l?l.area:'')}" placeholder="如：朝阳区"></label>
+      <label class="fld"><span>详细地址或位置描述</span><input id="n_addr" value="${esc(l?l.address:'')}"></label>
+      <div class="q-title" style="margin-top:12px;">地点分类（可多选）</div>
+      <div class="chips" id="n_cats">
+        ${CATEGORIES.map(c=>`<label class="pill ${checked(l&&l.cats,c.key)}"><input type="checkbox" value="${c.key}" ${checked(l&&l.cats,c.key)} style="display:none;">${c.emoji} ${c.name}</label>`).join('')}
+      </div>
+      <label class="fld"><span>适合年龄</span><input id="n_age" value="${esc(l?l.ageRange:'3—10岁')}"></label>
+      <label class="fld"><span>场地类型</span>
+        <select id="n_indoor"><option value="户外" ${l&&l.indoor==='户外'?'selected':''}>户外</option><option value="室内" ${l&&l.indoor==='室内'?'selected':''}>室内</option></select></label>
+      <label class="fld"><span>建议游玩时长</span><input id="n_dur" value="${esc(l?l.duration:'')}" placeholder="如：1—2小时"></label>
+      <label class="fld"><span>预算或费用说明</span><input id="n_cost" value="${esc(l?l.cost:'')}" placeholder="如：免费 / ¥30"></label>
+      <label class="fld"><span>是否需要预约</span><input id="n_book" value="${esc(l?l.needBooking:'')}" placeholder="如：需预约 / 无需预约"></label>
+      <label class="fld"><span>适合探索的主题</span><input id="n_theme" value="${esc(l?l.theme:'')}" placeholder="如：自然观察、昆虫"></label>
+      <label class="fld"><span>推荐游玩时间</span><input id="n_best" value="${esc(l?l.bestTime:'')}"></label>
+      <label class="fld"><span>注意事项</span><textarea id="n_notes">${esc(l?l.notes:'')}</textarea></label>
+      <label class="fld"><span>备注</span><textarea id="n_remark">${esc(l?l.remark:'')}</textarea></label>
+      <button class="btn alt" onclick="saveLocation('${editId||''}')">💾 ${l?'保存修改':'保存地点'}</button>
+      <button class="btn ghost sm" onclick="navigate('map')">取消</button>
+    </div>
+  </div>`;
+}
+function saveLocation(editId){
+  const name=document.getElementById('n_name').value.trim();
+  if(!name){ toast('请填写地点名称'); return; }
+  const cats=[...document.querySelectorAll('#n_cats input:checked')].map(i=>i.value);
+  const data={
+    name, city:document.getElementById('n_city').value.trim()||'北京',
+    area:document.getElementById('n_area').value.trim(),
+    address:document.getElementById('n_addr').value.trim(),
+    cats: cats.length?cats:['park'],
+    ageRange:document.getElementById('n_age').value.trim(),
+    indoor:document.getElementById('n_indoor').value,
+    duration:document.getElementById('n_dur').value.trim(),
+    cost:document.getElementById('n_cost').value.trim(),
+    needBooking:document.getElementById('n_book').value.trim(),
+    theme:document.getElementById('n_theme').value.trim(),
+    bestTime:document.getElementById('n_best').value.trim(),
+    notes:document.getElementById('n_notes').value.trim(),
+    remark:document.getElementById('n_remark').value.trim(),
+  };
+  if(editId){
+    const l=locById(editId); if(!l){ toast('地点不存在'); return; }
+    Object.assign(l,data); l.demo=false; save(); toast('已保存修改'); navigate('detail',editId);
+  }else{
+    const l=Object.assign({id:uid(),demo:false,visited:false,createdAt:Date.now(),pos:posFor(state.locations.length)},data);
+    state.locations.push(l); save(); toast('✅ 已添加地点'); navigate('detail',l.id);
+  }
+}
+
+/* ============ 底部导航 ============ */
+function bottomNav(){
+  const items=[
+    ['home','🏠','首页'],['map','🗺️','探索地图'],['diary','📖','探索日记'],
+    ['wishlist','❤️','愿望清单'],['parent','👨‍👩‍👧','家长管理']
+  ];
+  return `<div class="bottom">${items.map(i=>`<a class="${view===i[0]?'on':''}" onclick="navigate('${i[0]}')"><span class="ic">${i[1]}</span>${i[2]}</a>`).join('')}</div>`;
+}
+
+/* ============ 启动 ============ */
+function boot(){
+  load();
+  // 包装 navigate 以重绘底部导航
+  const origRender=render;
+  const appEl=document.getElementById('app');
+  const obs=new MutationObserver(()=>{});
+  // 每次渲染后追加底部导航
+  const _render=render;
+  window.__draw=function(){
+    _render();
+    const b=document.createElement('div'); b.innerHTML=bottomNav();
+    appEl.appendChild(b.firstChild);
+  };
+  window.navigate=function(v,p){ view=v; viewParam=p||null; window.scrollTo(0,0); window.__draw(); };
+  window.__draw();
+  // 暴露所需函数到全局（onclick 用）
+  ['zoomMap','toggleMapMode','setFilter','clearFilters','pickMood','pickIndoor','pickDur','pickBudget','weekendFind','weekendRandom','weekendReset','toggleWish','markVisited','delLocation','selMood','onPhoto','saveExploration','delDiary','doRandom','doneTask','nextTask','genPlan','delPlan','delAllDemo','exportData','importData','loadDemo','clearAll','saveLocation','renderCatChips'].forEach(fn=>{ if(typeof window[fn]==='undefined') window[fn]=eval(fn); });
+}
+boot();
+</script>
+</body>
+</html>
