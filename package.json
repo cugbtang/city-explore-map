@@ -1,0 +1,19 @@
+{
+  "name": "city-explore-map",
+  "version": "1.0.0",
+  "private": true,
+  "description": "儿童城市探索地图 - Capacitor WebView 外壳（iOS / Android 可上架）",
+  "scripts": {
+    "sync": "cap sync",
+    "android": "cap open android",
+    "ios": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.1.0",
+    "@capacitor/android": "^6.1.0",
+    "@capacitor/ios": "^6.1.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.0"
+  }
+}
