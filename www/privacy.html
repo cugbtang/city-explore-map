@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>隐私政策 · 儿童城市探索地图</title>
+<style>
+  :root{ --bg:#fff7ef; --card:#fff; --line:#f0e6da; --text:#4a4036; --muted:#8a8073; --orange:#ff8a5b; --yellow:#ffd27a; --shadow:0 6px 18px rgba(180,120,70,.12); }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.7; padding:0 0 calc(28px + env(safe-area-inset-bottom));}
+  .top{background:linear-gradient(135deg,#ffb27a,#ff8a5b); color:#fff; padding:calc(18px + env(safe-area-inset-top)) 18px 22px;
+    border-radius:0 0 24px 24px; box-shadow:var(--shadow);}
+  .top h1{margin:0; font-size:20px} .top p{margin:6px 0 0; opacity:.9; font-size:13px}
+  .wrap{max-width:480px; margin:0 auto; padding:16px}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px; box-shadow:var(--shadow)}
+  .card h2{margin:0 0 8px; font-size:16px; color:var(--orange)}
+  .card p{margin:6px 0; font-size:14px; color:var(--text)}
+  .tag{display:inline-block; background:#fff3e6; color:#c9703a; border-radius:999px; padding:2px 10px; font-size:12px; margin:3px 4px 3px 0}
+  ul{margin:8px 0; padding-left:20px; font-size:14px} li{margin:5px 0}
+  .back{display:block; width:calc(100% - 32px); max-width:448px; margin:8px auto 0; background:#fff; color:var(--orange);
+    border:1px solid var(--line); border-radius:14px; padding:13px; font-size:15px; cursor:pointer; box-shadow:var(--shadow)}
+  .foot{text-align:center; color:var(--muted); font-size:12px; margin-top:10px}
+</style>
+</head>
+<body>
+  <div class="top">
+    <h1>🔒 隐私政策</h1>
+    <p>儿童城市探索地图 · 最后更新 2026-10-29</p>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <h2>一句话结论</h2>
+      <p>本应用<strong>不收集、不上传任何个人信息</strong>。你在应用里记录的一切，都只留在你自己的设备上。</p>
+    </div>
+
+    <div class="card">
+      <h2>我们收集什么</h2>
+      <p><strong>什么都不上传。</strong>应用运行在本地，没有任何网络请求会发送你的数据。</p>
+      <p>你主动录入的内容仅保存在本机：</p>
+      <ul>
+        <li>地点信息（名称、分类、票价、开放时间等你填写的内容）</li>
+        <li>探索足迹、日记与本地照片</li>
+        <li>愿望清单、周末计划、成就进度</li>
+        <li>目标城市设置</li>
+      </ul>
+      <p>存储位置：浏览器 / WebView 的 <code>localStorage</code> 沙箱（ Capacitor 安卓端以本地 https 服务托管，确保存储可用）。</p>
+    </div>
+
+    <div class="card">
+      <h2>我们「不」做什么</h2>
+      <ul>
+        <li>不要求注册 / 登录，无账号体系</li>
+        <li>不连接任何服务器，无云端备份（如你需要可手动导出 JSON 自行保存）</li>
+        <li>不含任何第三方统计、广告或追踪 SDK</li>
+        <li>不申请摄像头、定位权限；「从相册选照片」由你主动触发，仅存本机</li>
+        <li>不向儿童展示广告或引导外部购买</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>儿童数据处理</h2>
+      <p>本应用面向儿童使用，但所有数据均由家长在设备上管理，且<strong>不离开本机</strong>。我们不向任何第三方提供儿童相关数据，因为没有任何数据被传出设备。</p>
+    </div>
+
+    <div class="card">
+      <h2>你拥有的控制权</h2>
+      <ul>
+        <li>「家长管理 → 导出数据」可把全部内容导出为 JSON 自行保存</li>
+        <li>「家长管理 → 清空全部数据」可一键删除本机所有内容</li>
+        <li>卸载应用即清除相关本地数据</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>联系方式</h2>
+      <p>如对本隐私政策有疑问，可通过项目仓库（GitHub: <span class="tag">cugbtang/city-explore-map</span>）提 Issue 联系。</p>
+    </div>
+
+    <button class="back" onclick="window.location.href='index.html'">‹ 返回应用</button>
+    <p class="foot">本政策为说明性文本，不构成法律意见；上架前请结合目标市场法规（如 COPPA / GDPR-K）酌情补充。</p>
+  </div>
+</body>
+</html>
