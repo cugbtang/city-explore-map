@@ -1013,6 +1013,7 @@ function renderParent(){
       <label class="fld"><span>切换到你所在的城市</span>
         <input id="n_city_set" placeholder="如：上海、广州、深圳"></label>
       <button class="btn soft sm" onclick="setCity()">保存城市</button>
+      <button class="btn ghost sm" onclick="blankStart()">🧹 空白起步（清空演示，从零开始）</button>
       <p class="sub">切换城市会删除属于北京的演示地点，请改用你所在城市的真实地点。</p>
     </div>
     <div class="card">
@@ -1032,7 +1033,17 @@ async function setCity(){
     if(!ok) return;
     state.locations=state.locations.filter(l=>!l.demo);
   }
-  state.settings.city=v; save(); toast('已切换到 '+v); renderParent();
+  state.settings.city=v; save();
+  if(state.locations.length===0){ toast('已切换到 '+v+'，去添加第一个真实地点吧~'); navigate('parentAdd'); }
+  else { toast('已切换到 '+v); renderParent(); }
+}
+async function blankStart(){
+  const v=document.getElementById('n_city_set').value.trim();
+  if(!v){ toast('请先输入城市名'); return; }
+  const ok=await confirmModal('空白起步','将删除全部演示地点并切换到「'+v+'」，从空白开始添加你的真实地点。确定吗？');
+  if(!ok) return;
+  state.locations=state.locations.filter(l=>!l.demo);
+  state.settings.city=v; save(); toast('已切换到 '+v+'，去添加第一个真实地点吧~'); navigate('parentAdd');
 }
 async function delAllDemo(){
   const ok=await confirmModal('删除演示地点','将删除全部 '+state.locations.filter(l=>l.demo).length+' 个演示地点，确定吗？');
