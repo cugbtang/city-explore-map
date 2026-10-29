@@ -284,6 +284,7 @@ function load(){
     if(!d || !Array.isArray(d.locations)){ state=defaultState(); save(); return; }
     state=d;
     if(!state.settings) state.settings={city:'北京'};
+    if(state.settings.friendsEnabled==null) state.settings.friendsEnabled=true;
     if(!Array.isArray(state.wishlist)) state.wishlist=[];
     if(!Array.isArray(state.explorations)) state.explorations=[];
     if(!Array.isArray(state.plans)) state.plans=[];
@@ -711,7 +712,7 @@ function renderFootprint(prefillId){
         <select id="f_loc">${state.locations.length?state.locations.map(x=>`<option value="${x.id}" ${prefillId===x.id?'selected':''}>${esc(x.name)}</option>`).join(''):'<option>请先添加地点</option>'}</select>
       </label>
       <label class="fld"><span>探索日期</span><input type="date" id="f_date" value="${new Date().toISOString().slice(0,10)}"></label>
-      <label class="fld"><span>同行人员（可选）</span><input id="f_companions" placeholder="如：爸爸、妈妈"></label>
+      ${state.settings.friendsEnabled!==false?`<label class="fld"><span>同行人员（可选）</span><input id="f_companions" placeholder="如：爸爸、妈妈"></label>`:''}
       <label class="fld"><span>看到了什么</span><textarea id="f_saw" placeholder="看到了有趣的东西…"></textarea></label>
       <label class="fld"><span>最喜欢什么</span><textarea id="f_fav" placeholder="最喜欢的事…"></textarea></label>
       <label class="fld"><span>学到了什么</span><textarea id="f_learn" placeholder="学到了新知识…"></textarea></label>
@@ -792,6 +793,7 @@ function renderDiary(){
             <b>📅 ${esc(r.date)}</b>
             <span class="sub">${esc(l?l.name:'未知地点')}</span>
           </div>
+          ${r.companions?`<p class="sub">👥 同行：${esc(r.companions)}</p>`:''}
           ${r.mood?`<p class="sub">心情：${esc(r.mood)}</p>`:''}
           ${r.saw?`<p>👀 看到：${esc(r.saw)}</p>`:''}
           ${r.favorite?`<p>💛 喜欢：${esc(r.favorite)}</p>`:''}
@@ -1017,6 +1019,15 @@ function renderParent(){
       <p class="sub">切换城市会删除属于北京的演示地点，请改用你所在城市的真实地点。</p>
     </div>
     <div class="card">
+      <h2>功能开关</h2>
+      <label class="fld"><span>好友同去（记录同行人员）</span>
+        <select id="f_friends" onchange="setFriends(this.value)">
+          <option value="on" ${state.settings.friendsEnabled!==false?'selected':''}>开启</option>
+          <option value="off" ${state.settings.friendsEnabled===false?'selected':''}>关闭</option>
+        </select></label>
+      <p class="sub">关闭后，添加探索记录时将不再显示「同行人员」字段。</p>
+    </div>
+    <div class="card">
       <h2>关于与隐私</h2>
       <button class="btn ghost sm" onclick="openPrivacy()">🔒 隐私政策</button>
       <p class="sub">本应用所有数据仅保存在本机，不上传任何服务器、无任何第三方统计或广告 SDK。</p>
@@ -1078,6 +1089,10 @@ async function loadDemo(){
   demoLocations().forEach(l=>state.locations.push(l));   save(); toast('已添加演示地点'); renderParent();
 }
 function openPrivacy(){ window.location.href='privacy.html'; }
+function setFriends(v){
+  state.settings.friendsEnabled=(v==='on');
+  save(); toast('好友同去已'+(v==='on'?'开启':'关闭')); renderParent();
+}
 async function clearAll(){
   const ok=await confirmModal('清空全部数据','将删除所有地点、愿望清单、探索记录、日记与计划，此操作不可恢复！');
   if(!ok)return;
@@ -1171,7 +1186,7 @@ function boot(){
   window.navigate=function(v,p){ view=v; viewParam=p||null; window.scrollTo(0,0); window.__draw(); };
   window.__draw();
   // 暴露所需函数到全局（onclick 用）
-  ['zoomMap','toggleMapMode','setFilter','clearFilters','pickMood','pickIndoor','pickDur','pickBudget','weekendFind','weekendRandom','weekendReset','toggleWish','markVisited','delLocation','selMood','onPhoto','saveExploration','delDiary','doRandom','doneTask','nextTask','genPlan','delPlan','delAllDemo','exportData','importData','loadDemo','clearAll','saveLocation','renderCatChips'].forEach(fn=>{ if(typeof window[fn]==='undefined') window[fn]=eval(fn); });
+  ['zoomMap','toggleMapMode','setFilter','clearFilters','pickMood','pickIndoor','pickDur','pickBudget','weekendFind','weekendRandom','weekendReset','toggleWish','markVisited','delLocation','selMood','onPhoto','saveExploration','delDiary','doRandom','doneTask','nextTask','genPlan','delPlan','delAllDemo','exportData','importData','loadDemo','clearAll','saveLocation','renderCatChips','setFriends'].forEach(fn=>{ if(typeof window[fn]==='undefined') window[fn]=eval(fn); });
 }
 boot();
 </script>
