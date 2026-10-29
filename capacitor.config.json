@@ -1,0 +1,8 @@
+{
+  "appId": "com.cityexplore.map",
+  "appName": "城市探索地图",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
