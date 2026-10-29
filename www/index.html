@@ -126,6 +126,19 @@
   .mini-stats .ms span{font-size:11px;color:var(--sub);}
   .catstat{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px;}
   .catstat:last-child{border-bottom:none;}
+  /* 探索日历 */
+  .cal-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
+  .cal-nav b{font-size:16px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+  .cal-h{text-align:center;font-size:12px;color:var(--sub);padding:4px 0;}
+  .cal-cell{min-height:50px;border:1px solid var(--line);border-radius:10px;padding:5px;font-size:12px;background:var(--panel);}
+  .cal-cell.empty{background:transparent;border:none;}
+  .cal-cell.has{background:#fff7ef;border-color:var(--accent);cursor:pointer;}
+  .cal-d{font-weight:700;color:var(--text);}
+  .cal-dot{display:block;font-size:11px;line-height:1.5;color:var(--sub);}
+  .cal-dot.e{color:#e07b3a;}
+  .cal-dot.p{color:#3a7be0;}
+  .cal-legend{display:flex;gap:14px;justify-content:center;margin-top:10px;font-size:12px;color:var(--sub);}
 </style>
 </head>
 <body>
@@ -369,6 +382,7 @@ function render(){
   if(view==='random') return renderRandom();
   if(view==='tasks') return renderTasks(viewParam);
   if(view==='plan') return renderPlan();
+  if(view==='calendar') return renderCalendar();
   if(view==='achievements') return renderAchievements();
   if(view==='stats') return renderStats();
   if(view==='parent') return renderParent();
@@ -411,6 +425,7 @@ function renderHome(){
         <button class="btn soft sm" onclick="navigate('map')">🗺️ 城市探索地图</button>
         <button class="btn soft sm" onclick="navigate('wishlist')">❤️ 我的愿望清单</button>
         <button class="btn soft sm" onclick="navigate('footprint')">👣 我的探索足迹</button>
+        <button class="btn soft sm" onclick="navigate('calendar')">📅 探索日历</button>
         <button class="btn soft sm" onclick="navigate('parent')">👨‍👩‍👧 家长管理</button>
       </div>
     </div>
@@ -816,6 +831,79 @@ async function delDiary(id){
   save(); toast('已删除'); renderDiary();
 }
 
+/* ============ 月度探索日历 ============ */
+let calCursor=null;  // {y, m}  m: 0-11
+function calInit(){ if(!calCursor){ const d=new Date(); calCursor={y:d.getFullYear(), m:d.getMonth()}; } }
+function renderCalendar(){
+  calInit();
+  const {y,m}=calCursor;
+  const explByDate={}, planByDate={};
+  state.explorations.forEach(e=>{ if(e.date){ (explByDate[e.date]=explByDate[e.date]||[]).push(e); } });
+  state.plans.forEach(p=>{ if(p.date){ (planByDate[p.date]=planByDate[p.date]||[]).push(p); } });
+  // 日详情视图
+  if(viewParam){
+    const date=viewParam;
+    const expls=(explByDate[date]||[]).map(e=>{
+      const l=locById(e.locationId);
+      return `<div class="card">
+        <div class="row-flex" style="justify-content:space-between;">
+          <b>🌟 ${esc(l?l.name:'未知地点')}</b>
+          ${e.companions?`<span class="sub">👥 ${esc(e.companions)}</span>`:''}
+        </div>
+        ${e.saw?`<p>👀 看到：${esc(e.saw)}</p>`:''}
+        ${e.favorite?`<p>💛 喜欢：${esc(e.favorite)}</p>`:''}
+      </div>`;
+    }).join('');
+    const plans=(planByDate[date]||[]).map(p=>{
+      const locs=(p.locations||[]).map(id=>locById(id)).filter(Boolean);
+      return `<div class="card">
+        <b>🗓️ 周末计划</b>
+        <p class="sub">交通：${esc(p.trans||'自行安排')} ｜ ${locs.length} 个地点</p>
+        ${locs.map(l=>`<p>· ${esc(l.name)}</p>`).join('')}
+      </div>`;
+    }).join('');
+    app.innerHTML=`
+    ${topbar('📅 '+date,'这一天的探索与计划。')}
+    <div class="page">
+      ${expls||plans?expls+plans:`<div class="empty"><div class="big">📅</div>这一天还没有记录。</div>`}
+      <button class="back" onclick="navigate('calendar')">‹ 返回月历</button>
+    </div>`;
+    return;
+  }
+  // 月历网格
+  const startDay=new Date(y,m,1).getDay();
+  const days=new Date(y,m+1,0).getDate();
+  let cells='';
+  for(let i=0;i<startDay;i++) cells+='<div class="cal-cell empty"></div>';
+  for(let d=1;d<=days;d++){
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const ne=(explByDate[ds]||[]).length, np=(planByDate[ds]||[]).length;
+    cells+=`<div class="cal-cell ${ne||np?'has':''}" onclick="navigate('calendar','${ds}')">
+      <div class="cal-d">${d}</div>
+      ${ne?`<span class="cal-dot e">🌟${ne}</span>`:''}
+      ${np?`<span class="cal-dot p">🗓️${np}</span>`:''}
+    </div>`;
+  }
+  const monthName=`${y}年${m+1}月`;
+  app.innerHTML=`
+  ${topbar('📅 探索日历','按月查看探索足迹与周末计划，点击有记录的日子看详情。')}
+  <div class="page">
+    <div class="cal-nav">
+      <button class="btn ghost sm" onclick="calPrev()">‹ 上个月</button>
+      <b>${monthName}</b>
+      <button class="btn ghost sm" onclick="calNext()">下个月 ›</button>
+    </div>
+    <div class="cal-grid">
+      ${['日','一','二','三','四','五','六'].map(w=>`<div class="cal-h">${w}</div>`).join('')}
+      ${cells}
+    </div>
+    <div class="cal-legend"><span>🌟 探索记录</span><span>🗓️ 周末计划</span></div>
+    <button class="back" onclick="navigate('diary')">‹ 返回探索日记</button>
+  </div>`;
+}
+function calPrev(){ calCursor.m--; if(calCursor.m<0){calCursor.m=11;calCursor.y--;} navigate('calendar'); }
+function calNext(){ calCursor.m++; if(calCursor.m>11){calCursor.m=0;calCursor.y++;} navigate('calendar'); }
+
 /* ============ 随机探索 ============ */
 function renderRandom(){
   app.innerHTML=`
@@ -1186,7 +1274,7 @@ function boot(){
   window.navigate=function(v,p){ view=v; viewParam=p||null; window.scrollTo(0,0); window.__draw(); };
   window.__draw();
   // 暴露所需函数到全局（onclick 用）
-  ['zoomMap','toggleMapMode','setFilter','clearFilters','pickMood','pickIndoor','pickDur','pickBudget','weekendFind','weekendRandom','weekendReset','toggleWish','markVisited','delLocation','selMood','onPhoto','saveExploration','delDiary','doRandom','doneTask','nextTask','genPlan','delPlan','delAllDemo','exportData','importData','loadDemo','clearAll','saveLocation','renderCatChips','setFriends'].forEach(fn=>{ if(typeof window[fn]==='undefined') window[fn]=eval(fn); });
+  ['zoomMap','toggleMapMode','setFilter','clearFilters','pickMood','pickIndoor','pickDur','pickBudget','weekendFind','weekendRandom','weekendReset','toggleWish','markVisited','delLocation','selMood','onPhoto','saveExploration','delDiary','doRandom','doneTask','nextTask','genPlan','delPlan','delAllDemo','exportData','importData','loadDemo','clearAll','saveLocation','renderCatChips','setFriends','calPrev','calNext'].forEach(fn=>{ if(typeof window[fn]==='undefined') window[fn]=eval(fn); });
 }
 boot();
 </script>
